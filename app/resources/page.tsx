@@ -38,7 +38,7 @@ export default function ResourcesPage() {
   const [genLoading, setGenLoading] = useState(false);
   const [generatedContent, setGeneratedContent] = useState("");
   const { toast } = useToast();
-  
+
   // Add Resource Form State
   const [showAddForm, setShowAddForm] = useState(false);
   const [addForm, setAddForm] = useState({
@@ -104,6 +104,62 @@ export default function ResourcesPage() {
     } catch (err) {
       setAddError("Failed to add resource. Please try again.");
       setAddLoading(false);
+    }
+  };
+
+  const handleGenerateResource = async () => {
+    if (!genPrompt) {
+      toast({
+        title: "Prompt is empty",
+        description: "Please enter a topic to generate resources.",
+        variant: "destructive",
+      });
+      return;
+    }
+    setGenLoading(true);
+    setGeneratedContent("");
+    console.log("Generating resource for prompt:", genPrompt);
+    try {
+      // const response = await geminiRequest(genPrompt, true); // Old direct call
+      const response = await fetch("/api/gemini", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ prompt: genPrompt }),
+      });
+      console.log("Response from /api/gemini:", response);
+
+      if (!response.ok) {
+        const errorData = await response.json();
+        console.error("Error from /api/gemini:", errorData);
+        throw new Error(errorData.error || `API request failed with status ${response.status}`);
+      }
+
+      const data = await response.json();
+      console.log("Data from /api/gemini:", data);
+
+      // Updated to access the text directly from the backend's response structure
+      const text = data.text; 
+
+      if (text) {
+        setGeneratedContent(text);
+        toast({
+          title: "Resource Generated",
+          description: "AI has generated content based on your prompt.",
+        });
+      } else {
+        console.error("No text found in Gemini response:", data);
+        throw new Error("No content generated. The response might be empty or in an unexpected format.");
+      }
+    } catch (error: any) {
+      console.error("Failed to generate resource:", error);
+      toast({
+        title: "Generation Failed",
+        description: error.message || "An error occurred while generating the resource.",
+        variant: "destructive",
+      });
+      setGeneratedContent("Error: Could not generate content. " + error.message);
+    } finally {
+      setGenLoading(false);
     }
   };
 
@@ -244,21 +300,42 @@ export default function ResourcesPage() {
     setTypeFilter(e.target.value)
   }
 
-  const handleContentGen = async () => {
-    if (!genPrompt.trim()) return;
-    setGenLoading(true);
-    setGeneratedContent("");
+  const handleUpvote = async (resourceId: string) => {
     try {
-      const res = await geminiRequest({ prompt: genPrompt, type: "resource-gen" });
-      if (res && res.candidates && res.candidates[0]?.content?.parts[0]?.text) {
-        setGeneratedContent(res.candidates[0].content.parts[0].text);
+      const res = await fetch("/api/resources/upvote", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ resourceId }),
+      });
+      if (res.ok) {
+        setResources(resources.map(resource => 
+          resource.id === resourceId ? { ...resource, upvotes: resource.upvotes + 1 } : resource
+        ));
       } else {
-        setGeneratedContent("No content generated. Try a different prompt.");
+        toast({ title: "Error", description: "Failed to upvote. Please try again.", variant: "destructive" });
       }
-    } catch (e) {
-      setGeneratedContent("Error: Failed to generate content.");
+    } catch (err) {
+      toast({ title: "Error", description: "Failed to upvote. Please try again.", variant: "destructive" });
     }
-    setGenLoading(false);
+  };
+
+  const handleView = async (resourceId: string) => {
+    try {
+      const res = await fetch("/api/resources/view", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ resourceId }),
+      });
+      if (res.ok) {
+        setResources(resources.map(resource => 
+          resource.id === resourceId ? { ...resource, views: resource.views + 1 } : resource
+        ));
+      } else {
+        toast({ title: "Error", description: "Failed to register view. Please try again.", variant: "destructive" });
+      }
+    } catch (err) {
+      toast({ title: "Error", description: "Failed to register view. Please try again.", variant: "destructive" });
+    }
   };
 
   const filteredResources = resources.filter(resource => {
@@ -270,10 +347,10 @@ export default function ResourcesPage() {
   })
 
   return (
-    <div className="min-h-screen bg-black text-white px-2 md:px-8 py-8 font-[Inter,sans-serif]">
+    <div className="min-h-screen bg-black text-gray-100 px-2 md:px-8 py-8 font-[Inter,sans-serif]">
       <h1 className="text-3xl font-bold mb-6 text-center">Resources</h1>
       <div className="flex flex-col md:flex-row gap-4 mb-6 items-center justify-between">
-        <Button onClick={() => setShowAddForm((v) => !v)} className="bg-green-700 hover:bg-green-800 text-white rounded-full font-semibold px-6 py-2 mb-4 md:mb-0">
+        <Button onClick={() => setShowAddForm((v) => !v)} className="bg-green-700 hover:bg-green-800 text-gray-100 rounded-full font-semibold px-6 py-2 mb-4 md:mb-0">
           {showAddForm ? "Close" : "Add Resource"}
         </Button>
         <div className="flex gap-2 w-full md:w-auto">
@@ -282,9 +359,9 @@ export default function ResourcesPage() {
             placeholder="Search resources..."
             value={searchQuery}
             onChange={handleSearch}
-            className="rounded-full bg-[#18181b] text-white border border-gray-700 focus:border-blue-500 px-4 py-2"
+            className="rounded-full bg-[#18181b] text-gray-100 border border-gray-700 focus:border-blue-500 px-4 py-2"
           />
-          <select value={subjectFilter} onChange={handleSubjectFilter} className="rounded-full bg-[#18181b] text-white border border-gray-700 px-4 py-2">
+          <select value={subjectFilter} onChange={handleSubjectFilter} className="rounded-full bg-[#18181b] text-gray-100 border border-gray-700 px-4 py-2">
             <option value="">All Subjects</option>
             <option value="Computer Science">Computer Science</option>
             <option value="Web Development">Web Development</option>
@@ -292,7 +369,7 @@ export default function ResourcesPage() {
             <option value="Artificial Intelligence">Artificial Intelligence</option>
             <option value="Physics">Physics</option>
           </select>
-          <select value={typeFilter} onChange={handleTypeFilter} className="rounded-full bg-[#18181b] text-white border border-gray-700 px-4 py-2">
+          <select value={typeFilter} onChange={handleTypeFilter} className="rounded-full bg-[#18181b] text-gray-100 border border-gray-700 px-4 py-2">
             <option value="">All Types</option>
             <option value="pdf">PDF</option>
             <option value="ppt">PPT</option>
@@ -305,11 +382,11 @@ export default function ResourcesPage() {
             placeholder="Generate resource content with AI..."
             value={genPrompt}
             onChange={e => setGenPrompt(e.target.value)}
-            className="rounded-full bg-[#18181b] text-white border border-gray-700 focus:border-blue-500 px-4 py-2 w-64"
+            className="rounded-full bg-[#18181b] text-gray-100 border border-gray-700 focus:border-blue-500 px-4 py-2 w-64"
           />
           <Button
-            onClick={handleContentGen}
-            className="bg-blue-700 hover:bg-blue-800 text-white rounded-full font-semibold px-6 py-2"
+            onClick={handleGenerateResource}
+            className="bg-blue-700 hover:bg-blue-800 text-gray-100 rounded-full font-semibold px-6 py-2"
             disabled={genLoading}
           >
             {genLoading ? "Generating..." : "Generate"}
@@ -317,12 +394,12 @@ export default function ResourcesPage() {
         </div>
       </div>
       {showAddForm && (
-        <form onSubmit={handleAddResource} className="bg-[#18181b] border border-gray-800 rounded-2xl p-6 mb-8 max-w-2xl mx-auto flex flex-col gap-4">
+        <form onSubmit={handleAddResource} className="bg-[#18181b] text-gray-100 border border-gray-800 rounded-2xl p-6 mb-8 max-w-2xl mx-auto flex flex-col gap-4">
           <h2 className="text-xl font-bold mb-2 text-center">Add a Resource</h2>
-          <Input name="title" placeholder="Title" value={addForm.title} onChange={handleAddChange} className="bg-black text-white border-gray-700 focus:border-blue-500" />
-          <Textarea name="description" placeholder="Description" value={addForm.description} onChange={handleAddChange} className="bg-black text-white border-gray-700 focus:border-blue-500 min-h-[60px]" />
-          <Input name="subject" placeholder="Subject" value={addForm.subject} onChange={handleAddChange} className="bg-black text-white border-gray-700 focus:border-blue-500" />
-          <select name="fileType" value={addForm.fileType} onChange={handleAddChange} className="bg-black text-white border-gray-700 focus:border-blue-500 rounded px-3 py-2">
+          <Input name="title" placeholder="Title" value={addForm.title} onChange={handleAddChange} className="bg-black text-gray-100 border-gray-700 focus:border-blue-500" />
+          <Textarea name="description" placeholder="Description" value={addForm.description} onChange={handleAddChange} className="bg-black text-gray-100 border-gray-700 focus:border-blue-500 min-h-[60px]" />
+          <Input name="subject" placeholder="Subject" value={addForm.subject} onChange={handleAddChange} className="bg-black text-gray-100 border-gray-700 focus:border-blue-500" />
+          <select name="fileType" value={addForm.fileType} onChange={handleAddChange} className="bg-black text-gray-100 border-gray-700 focus:border-blue-500 rounded px-3 py-2">
             <option value="">Select Type</option>
             <option value="pdf">PDF</option>
             <option value="ppt">PPT</option>
@@ -330,52 +407,58 @@ export default function ResourcesPage() {
             <option value="video">Video</option>
             <option value="link">Link</option>
           </select>
-          <Input name="link" placeholder="Resource Link (YouTube, website, etc.)" value={addForm.link} onChange={handleAddChange} className="bg-black text-white border-gray-700 focus:border-blue-500" />
+          <Input name="link" placeholder="Resource Link (YouTube, website, etc.)" value={addForm.link} onChange={handleAddChange} className="bg-black text-gray-100 border-gray-700 focus:border-blue-500" />
           {addError && <div className="text-red-400 text-sm text-center">{addError}</div>}
-          <Button type="submit" className="bg-blue-700 hover:bg-blue-800 text-white rounded-full font-semibold py-2 mt-2" disabled={addLoading}>
+          <Button type="submit" className="bg-blue-700 hover:bg-blue-800 text-gray-100 rounded-full font-semibold py-2 mt-2" disabled={addLoading}>
             {addLoading ? "Adding..." : "Add Resource"}
           </Button>
         </form>
       )}
       {generatedContent && (
-        <div className="mt-4 p-4 bg-[#23232a] rounded-xl border border-gray-700 text-white max-w-3xl mx-auto whitespace-pre-line">
-          <h3 className="font-bold mb-2 text-lg text-blue-400">AI Generated Content</h3>
-          <div>{generatedContent}</div>
+        <div className="mt-4 p-4 border rounded-md bg-gray-50">
+          <h3 className="text-lg font-semibold mb-2">Generated Content:</h3>
+          {/* <ReactMarkdown className="prose prose-sm max-w-none">{generatedContent}</ReactMarkdown> */}
+          <Textarea value={generatedContent} readOnly rows={10} className="w-full bg-white" />
+
         </div>
       )}
-      <div className="overflow-x-auto rounded-2xl shadow-lg border border-gray-800 bg-[#18181b]">
+      <div className="overflow-x-auto rounded-2xl shadow-lg border border-gray-800 bg-[#18181b] text-gray-100">
         <table className="min-w-full divide-y divide-gray-700">
           <thead>
             <tr>
-              <th className="px-4 py-3 text-left text-xs font-semibold text-gray-400 uppercase">Title</th>
-              <th className="px-4 py-3 text-left text-xs font-semibold text-gray-400 uppercase">Description</th>
-              <th className="px-4 py-3 text-left text-xs font-semibold text-gray-400 uppercase">Subject</th>
-              <th className="px-4 py-3 text-left text-xs font-semibold text-gray-400 uppercase">Type</th>
-              <th className="px-4 py-3 text-left text-xs font-semibold text-gray-400 uppercase">Uploaded By</th>
-              <th className="px-4 py-3 text-left text-xs font-semibold text-gray-400 uppercase">Tags</th>
-              <th className="px-4 py-3 text-left text-xs font-semibold text-gray-400 uppercase">Upvotes</th>
-              <th className="px-4 py-3 text-left text-xs font-semibold text-gray-400 uppercase">Views</th>
+              <th className="px-4 py-3 text-left text-xs font-semibold text-gray-300 uppercase">Title</th>
+              <th className="px-4 py-3 text-left text-xs font-semibold text-gray-300 uppercase">Description</th>
+              <th className="px-4 py-3 text-left text-xs font-semibold text-gray-300 uppercase">Subject</th>
+              <th className="px-4 py-3 text-left text-xs font-semibold text-gray-300 uppercase">Type</th>
+              <th className="px-4 py-3 text-left text-xs font-semibold text-gray-300 uppercase">Tags</th>
+              <th className="px-4 py-3 text-left text-xs font-semibold text-gray-300 uppercase">Upvotes</th>
+              <th className="px-4 py-3 text-left text-xs font-semibold text-gray-300 uppercase">Views</th>
+              <th className="px-4 py-3 text-left text-xs font-semibold text-gray-300 uppercase">Actions</th>
             </tr>
           </thead>
           <tbody className="divide-y divide-gray-800">
             {isLoading ? (
-              <tr><td colSpan={9} className="text-center py-8 text-gray-400">Loading...</td></tr>
+              <tr><td colSpan={8} className="text-center py-8 text-gray-300">Loading...</td></tr>
             ) : filteredResources.length === 0 ? (
-              <tr><td colSpan={9} className="text-center py-8 text-gray-400">No resources found.</td></tr>
+              <tr><td colSpan={8} className="text-center py-8 text-gray-300">No resources found.</td></tr>
             ) : (
               filteredResources.map(resource => (
-                <tr key={resource.id} className="hover:bg-[#23232a] transition-colors cursor-pointer" onClick={() => window.open(resource.link, '_blank')}>
+                <tr key={resource.id} className="hover:bg-[#23232a] transition-colors cursor-pointer">
                   <td className="px-4 py-3 font-semibold text-blue-300 underline">{resource.title}</td>
-                  <td className="px-4 py-3 text-gray-200 max-w-xs truncate">{resource.description}</td>
+                  <td className="px-4 py-3 text-gray-100 max-w-xs truncate">{resource.description}</td>
                   <td className="px-4 py-3">{resource.subject}</td>
                   <td className="px-4 py-3 uppercase">{resource.fileType}</td>
-                  <td className="px-4 py-3 flex items-center gap-2">
-                    <img src={resource.uploadedBy.avatar} alt={resource.uploadedBy.name} className="w-7 h-7 rounded-full" />
-                    <span>{resource.uploadedBy.name}</span>
+                  <td className="px-4 py-3 text-xs text-gray-300">{resource.tags.join(", ")}</td>
+                  <td className="px-4 py-3">
+                    <Button onClick={() => handleUpvote(resource.id)} className="bg-green-700 hover:bg-green-800 text-gray-100 rounded-full px-4 py-2 text-sm font-semibold mr-2">
+                      {resource.upvotes} Upvote
+                    </Button>
                   </td>
-                  <td className="px-4 py-3 text-xs text-gray-400">{resource.tags.join(", ")}</td>
-                  <td className="px-4 py-3 text-green-400 font-bold">{resource.upvotes}</td>
-                  <td className="px-4 py-3 text-yellow-400 font-bold">{resource.views}</td>
+                  <td className="px-4 py-3">
+                    <Button onClick={() => handleView(resource.id)} className="bg-blue-700 hover:bg-blue-800 text-gray-100 rounded-full px-4 py-2 text-sm font-semibold">
+                      {resource.views} View
+                    </Button>
+                  </td>
                 </tr>
               ))
             )}

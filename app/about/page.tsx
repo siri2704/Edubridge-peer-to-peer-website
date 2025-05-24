@@ -1,45 +1,42 @@
 import React from 'react';
-import Image from 'next/image';
 
 const AboutPage = () => {
   return (
     <div className="container mx-auto py-10 px-4">
       <h1 className="text-4xl font-bold mb-6 text-center">About Us</h1>
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
+      <div className="flex flex-col md:flex-row justify-center items-center gap-8 max-w-4xl mx-auto">
         {/* Card for Siri */}
-        <div className="bg-white shadow-md rounded-lg overflow-hidden">
-          <Image
-            src="/placeholder-user.jpg"
+        <div className="bg-white shadow-2xl rounded-2xl flex flex-col items-center py-10 px-8 w-80 md:w-96 transition-transform hover:scale-105 border border-gray-200">
+          <img
+            src="/siri-profile.jpg"
             alt="Siri"
-            width={400}
-            height={400}
-            className="w-full h-64 object-cover"
+            width={160}
+            height={160}
+            className="rounded-full border-4 border-primary object-cover mb-6 shadow-md"
+            style={{ aspectRatio: '1/1', objectFit: 'cover' }}
           />
-          <div className="p-6">
-            <h2 className="text-2xl font-semibold mb-2">Siri</h2>
-            <p className="text-gray-700 mb-4">Student of BMS College of Engineering</p>
-            <p className="text-gray-600">
-              Siri is passionate about web development and has contributed significantly to the design and functionality of this platform.
-            </p>
-          </div>
+          <h2 className="text-2xl font-bold text-gray-900 mt-2 mb-1 text-center">Siri</h2>
+          <p className="text-base font-medium text-gray-700 mb-2 text-center">Student of BMS College of Engineering</p>
+          <p className="text-base text-gray-600 text-center max-w-xs">
+            Siri is passionate about web development and has contributed significantly to the design and functionality of this platform.
+          </p>
         </div>
 
         {/* Card for Vishaka */}
-        <div className="bg-white shadow-md rounded-lg overflow-hidden">
-          <Image
-            src="/placeholder-user.jpg"
+        <div className="bg-white shadow-2xl rounded-2xl flex flex-col items-center py-10 px-8 w-80 md:w-96 transition-transform hover:scale-105 border border-gray-200">
+          <img
+            src="/vishaka-profile.jpeg"
             alt="Vishaka"
-            width={400}
-            height={400}
-            className="w-full h-64 object-cover"
+            width={160}
+            height={160}
+            className="rounded-full border-4 border-primary object-cover mb-6 shadow-md"
+            style={{ aspectRatio: '1/1', objectFit: 'cover' }}
           />
-          <div className="p-6">
-            <h2 className="text-2xl font-semibold mb-2">Vishaka</h2>
-            <p className="text-gray-700 mb-4">Student of BMS College of Engineering</p>
-            <p className="text-gray-600">
-              Vishaka has been instrumental in bringing creative ideas and ensuring a seamless user experience for this platform.
-            </p>
-          </div>
+          <h2 className="text-2xl font-bold text-gray-900 mt-2 mb-1 text-center">Vishaka</h2>
+          <p className="text-base font-medium text-gray-700 mb-2 text-center">Student of BMS College of Engineering</p>
+          <p className="text-base text-gray-600 text-center max-w-xs">
+            Vishaka has been instrumental in bringing creative ideas and ensuring a seamless user experience for this platform.
+          </p>
         </div>
       </div>
       <div className="mt-10">

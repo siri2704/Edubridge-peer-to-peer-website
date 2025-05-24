@@ -1,103 +1,35 @@
-import { NextResponse } from "next/server"
-import { MongoClient } from "mongodb"
+import { NextRequest, NextResponse } from "next/server";
+import clientPromise from "@/lib/mongodb";
 
-// This would be your MongoDB connection string from environment variables
-const uri = process.env.MONGODB_URI || "mongodb://localhost:27017/edubridge"
-
-let client: MongoClient
-let clientPromise: Promise<MongoClient>
-
-if (!global._mongoClientPromise) {
-  client = new MongoClient(uri)
-  global._mongoClientPromise = client.connect()
-}
-clientPromise = global._mongoClientPromise
-
-// Get study groups
-export async function GET(request: Request) {
+// POST: Create a new study group
+export async function POST(req: NextRequest) {
   try {
-    const { searchParams } = new URL(request.url)
-    const subject = searchParams.get("subject")
-    const userId = searchParams.get("userId")
-    const page = Number.parseInt(searchParams.get("page") || "1")
-    const limit = Number.parseInt(searchParams.get("limit") || "10")
-
-    const client = await clientPromise
-    const db = client.db()
-
-    // Build query based on filters
-    const query: any = {}
-
-    if (subject) {
-      query.subject = subject
+    const body = await req.json();
+    if (!body.name || !body.description) {
+      return NextResponse.json({ error: "Missing required fields" }, { status: 400 });
     }
-
-    if (userId) {
-      query.$or = [{ createdBy: userId }, { members: userId }]
-    }
-
-    // Get study groups with pagination
-    const studyGroups = await db
-      .collection("studyGroups")
-      .find(query)
-      .sort({ createdAt: -1 })
-      .skip((page - 1) * limit)
-      .limit(limit)
-      .toArray()
-
-    // Get total count for pagination
-    const total = await db.collection("studyGroups").countDocuments(query)
-
-    return NextResponse.json({
-      studyGroups,
-      pagination: {
-        total,
-        page,
-        limit,
-        pages: Math.ceil(total / limit),
-      },
-    })
-  } catch (error) {
-    console.error("Get study groups error:", error)
-    return NextResponse.json({ error: "Internal server error" }, { status: 500 })
+    const client = await clientPromise;
+    const db = client.db();
+    const result = await db.collection("studyGroups").insertOne({
+      name: body.name,
+      description: body.description,
+      members: body.members || [],
+      createdAt: new Date(),
+    });
+    return NextResponse.json({ success: true, id: result.insertedId });
+  } catch (error: any) {
+    return NextResponse.json({ error: error.message || "Failed to create study group" }, { status: 500 });
   }
 }
 
-// Create study group
-export async function POST(request: Request) {
+// GET: List all study groups
+export async function GET() {
   try {
-    const { name, description, subject, createdBy } = await request.json()
-
-    if (!name || !subject || !createdBy) {
-      return NextResponse.json({ error: "Name, subject, and creator are required" }, { status: 400 })
-    }
-
-    const client = await clientPromise
-    const db = client.db()
-
-    const newStudyGroup = {
-      name,
-      description,
-      subject,
-      createdBy,
-      members: [createdBy],
-      createdAt: new Date(),
-      updatedAt: new Date(),
-      isActive: true,
-    }
-
-    const result = await db.collection("studyGroups").insertOne(newStudyGroup)
-
-    return NextResponse.json(
-      {
-        message: "Study group created successfully",
-        studyGroupId: result.insertedId,
-        success: true,
-      },
-      { status: 201 },
-    )
-  } catch (error) {
-    console.error("Create study group error:", error)
-    return NextResponse.json({ error: "Internal server error" }, { status: 500 })
+    const client = await clientPromise;
+    const db = client.db();
+    const groups = await db.collection("studyGroups").find({}).toArray();
+    return NextResponse.json(groups);
+  } catch (error: any) {
+    return NextResponse.json({ error: error.message || "Failed to fetch study groups" }, { status: 500 });
   }
 }

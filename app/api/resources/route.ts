@@ -1,5 +1,5 @@
-import { NextResponse } from "next/server"
-import { MongoClient } from "mongodb"
+import { NextRequest, NextResponse } from "next/server"
+import { MongoClient, ObjectId } from "mongodb"
 
 // This would be your MongoDB connection string from environment variables
 const uri = process.env.MONGODB_URI || "mongodb://localhost:27017/edubridge"
@@ -110,6 +110,41 @@ export async function POST(request: Request) {
     )
   } catch (error) {
     console.error("Upload resource error:", error)
+    return NextResponse.json({ error: "Internal server error" }, { status: 500 })
+  }
+}
+
+// Add upvote and view endpoints for resources
+export async function PATCH(req: NextRequest) {
+  const { resourceId, action } = await req.json()
+  if (!resourceId || !action) {
+    return NextResponse.json({ error: "Missing resourceId or action" }, { status: 400 })
+  }
+
+  try {
+    const client = await clientPromise
+    const db = client.db()
+    const collection = db.collection("resources")
+
+    if (action === "upvote") {
+      const result = await collection.updateOne(
+        { _id: new ObjectId(resourceId) },
+        { $inc: { upvotes: 1 } },
+      )
+      return NextResponse.json({ success: true })
+    }
+
+    if (action === "view") {
+      const result = await collection.updateOne(
+        { _id: new ObjectId(resourceId) },
+        { $inc: { views: 1 } },
+      )
+      return NextResponse.json({ success: true })
+    }
+
+    return NextResponse.json({ error: "Invalid action" }, { status: 400 })
+  } catch (error) {
+    console.error("Update resource error:", error)
     return NextResponse.json({ error: "Internal server error" }, { status: 500 })
   }
 }

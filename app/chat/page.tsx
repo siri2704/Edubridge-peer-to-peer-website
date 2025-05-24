@@ -14,6 +14,13 @@ function getUsername() {
   return "userA";
 }
 
+function getUserEmail() {
+  if (typeof window !== "undefined") {
+    return localStorage.getItem("edubridge-user-email") || null;
+  }
+  return null;
+}
+
 export default function ChatPageWrapper() {
   return (
     <Suspense fallback={<div>Loading chat...</div>}>
@@ -25,11 +32,15 @@ export default function ChatPageWrapper() {
 function ChatPage() {
   const router = useRouter();
   const searchParams = useSearchParams();
-  const groupId = searchParams.get("groupId") || "1"; // fallback for demo
+  const mentorEmail = searchParams.get("mentor");
+  const [username, setUsername] = useState("userA");
+  const [userEmail, setUserEmail] = useState<string | null>(null);
+  // Use a unique groupId for each student-mentor pair
+  const uniqueGroupId = mentorEmail && userEmail ? `${userEmail}__${mentorEmail}` : (searchParams.get("groupId") || "1");
+
   const [messages, setMessages] = useState<any[]>([]);
   const [newMessage, setNewMessage] = useState("");
   const [loading, setLoading] = useState(false);
-  const [username, setUsername] = useState("userA");
   const [file, setFile] = useState<File | null>(null);
   const chatEndRef = useRef<HTMLDivElement>(null);
 
@@ -47,12 +58,23 @@ function ChatPage() {
     } else {
       setUsername(stored);
     }
+    // Get user email for chat group
+    const email = getUserEmail();
+    if (!email) {
+      const input = window.prompt("Enter your email for chat:", "");
+      if (input && input.trim() !== "") {
+        localStorage.setItem("edubridge-user-email", input.trim());
+        setUserEmail(input.trim());
+      }
+    } else {
+      setUserEmail(email);
+    }
   }, []);
 
   useEffect(() => {
     async function fetchMessages() {
       setLoading(true);
-      const res = await fetch(`/api/chat?groupId=${groupId}`);
+      const res = await fetch(`/api/chat?groupId=${uniqueGroupId}`);
       const data = await res.json();
       setMessages(data);
       setLoading(false);
@@ -60,35 +82,24 @@ function ChatPage() {
     fetchMessages();
     const interval = setInterval(fetchMessages, 2000); // Poll every 2s
     return () => clearInterval(interval);
-  }, [groupId]);
+  }, [uniqueGroupId]);
 
   useEffect(() => {
     chatEndRef.current?.scrollIntoView({ behavior: "smooth" });
   }, [messages]);
 
-  const handleSendMessage = async () => {
-    if (newMessage.trim() === "" && !file) return;
-    let fileUrl = null;
-    let fileType = null;
-    if (file) {
-      // For demo: use a local URL. In production, upload to server/cloud storage.
-      fileUrl = URL.createObjectURL(file);
-      fileType = file.type.startsWith("image/") ? "image" : "file";
-    }
+  const handleSend = async () => {
+    if (!newMessage.trim()) return;
     await fetch("/api/chat", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({
-        groupId,
-        sender: username,
+        groupId: uniqueGroupId,
+        sender: userEmail,
         text: newMessage,
-        fileUrl,
-        fileType,
-        fileName: file ? file.name : undefined,
       }),
     });
     setNewMessage("");
-    setFile(null);
   };
 
   return (
@@ -130,8 +141,8 @@ function ChatPage() {
                       <div
                         className={`rounded-2xl px-5 py-3 shadow-lg text-base font-medium break-words whitespace-pre-line ${
                           isSender
-                            ? "bg-blue-100 text-blue-900 rounded-br-none border border-blue-300"
-                            : "bg-green-100 text-green-900 rounded-bl-none border border-green-300"
+                            ? "bg-blue-100 text-black rounded-br-none border border-blue-300"
+                            : "bg-green-100 text-black rounded-bl-none border border-green-300"
                         }`}
                       >
                         {message.text}
@@ -166,10 +177,10 @@ function ChatPage() {
           value={newMessage}
           onChange={(e) => setNewMessage(e.target.value)}
           className="flex-1 rounded-full border-2 border-blue-200 focus:border-blue-400 px-4 py-2 bg-gray-50"
-          onKeyDown={(e) => { if (e.key === "Enter") handleSendMessage(); }}
+          onKeyDown={(e) => { if (e.key === "Enter") handleSend(); }}
         />
         <Button
-          onClick={handleSendMessage}
+          onClick={handleSend}
           className="bg-blue-500 hover:bg-blue-600 text-white font-semibold rounded-full px-6 py-2 shadow"
         >
           Send

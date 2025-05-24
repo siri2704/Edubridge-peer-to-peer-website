@@ -1,150 +1,115 @@
+"use client";
+
 import type React from "react"
 import Link from "next/link"
 import { Button } from "@/components/ui/button"
 import { BookOpen, Users, Video, FileText, MessageSquare, Award } from "lucide-react"
+import { useTheme } from "next-themes"
 
 export default function Home() {
+  const { theme } = useTheme();
+  const isDark = theme === "dark";
   return (
-    <div className="flex flex-col min-h-screen">
+    <main className="min-h-screen bg-black text-white font-[Inter,sans-serif]">
       {/* Hero Section */}
-      <section className="w-full py-16 bg-gradient-to-b from-blue-500 to-blue-700 text-white">
-        <div className="container mx-auto px-6 md:px-12">
-          <div className="grid gap-8 lg:grid-cols-2 items-center">
-            <div className="space-y-6">
-              <h1 className="text-4xl font-extrabold tracking-tight sm:text-5xl lg:text-6xl">
-                Learn Together, Grow Together
-              </h1>
-              <p className="max-w-lg text-lg md:text-xl">
-                EduBridge connects students for collaborative learning, mentorship, and knowledge sharing in a supportive peer-to-peer environment.
-              </p>
-              <div className="flex flex-wrap gap-4">
-                <Link href="/signup">
-                  <Button size="lg" className="bg-white text-blue-700 hover:bg-gray-100">
-                    Get Started
-                  </Button>
-                </Link>
-                <Link href="/about">
-                  <Button size="lg" variant="outline" className="text-white border-white hover:bg-white hover:text-blue-700">
-                    Learn More
-                  </Button>
-                </Link>
-              </div>
+      <section className="w-full py-16 bg-black text-white border-b border-gray-800">
+        <div className="max-w-5xl mx-auto px-4 flex flex-col md:flex-row items-center gap-10">
+          <div className="flex-1 flex flex-col gap-6">
+            <h1 className="text-4xl md:text-5xl font-bold leading-tight mb-2">Learn Together, Grow Together</h1>
+            <p className="text-lg text-gray-300 mb-4">EduBridge connects students for collaborative learning, mentorship, and knowledge sharing in a supportive peer-to-peer environment.</p>
+            <div className="flex gap-4">
+              <Button size="lg" className="bg-white text-black hover:bg-gray-200 font-bold" onClick={() => window.location.href = "/signup"}>Get Started</Button>
+              <Button size="lg" variant="outline" className="text-white border-white hover:bg-white hover:text-black font-bold" onClick={() => window.location.href = "/features"}>Learn More</Button>
             </div>
-            <div className="hidden lg:block">
-              <img src="/placeholder.svg" alt="Students collaborating" className="w-full h-auto" />
-            </div>
+          </div>
+          <div className="flex-1 flex justify-center">
+            <img src="/placeholder-logo.svg" alt="Students collaborating" className="w-64 h-64 object-contain grayscale" />
           </div>
         </div>
       </section>
-
       {/* Features Section */}
-      <section className="w-full py-16 bg-white">
-        <div className="container mx-auto px-6 md:px-12">
-          <h2 className="text-3xl font-bold text-center mb-12 text-gray-800">Empowering Students Through Collaboration</h2>
-          <div className="grid gap-8 md:grid-cols-2 lg:grid-cols-3">
-            <div className="bg-gray-100 p-6 rounded-lg shadow-md">
-              <h3 className="text-xl font-semibold mb-2 text-gray-800">Peer Mentorship</h3>
-              <p className="text-gray-600">Connect with knowledgeable peers for one-on-one mentorship sessions tailored to your learning needs.</p>
-            </div>
-            <div className="bg-gray-100 p-6 rounded-lg shadow-md">
-              <h3 className="text-xl font-semibold mb-2 text-gray-800">Integrated Video Calls</h3>
-              <p className="text-gray-600">Seamless video integration for face-to-face learning sessions with your peers.</p>
-            </div>
-            <div className="bg-gray-100 p-6 rounded-lg shadow-md">
-              <h3 className="text-xl font-semibold mb-2 text-gray-800">Study Groups</h3>
-              <p className="text-gray-600">Join or create interactive study groups with real-time chat and collaborative tools.</p>
-            </div>
-            <div className="bg-gray-100 p-6 rounded-lg shadow-md">
-              <h3 className="text-xl font-semibold mb-2 text-gray-800">Resource Sharing</h3>
-              <p className="text-gray-600">Upload, organize and share notes, documents and study materials with version control.</p>
-            </div>
-            <div className="bg-gray-100 p-6 rounded-lg shadow-md">
-              <h3 className="text-xl font-semibold mb-2 text-gray-800">Session Scheduling</h3>
-              <p className="text-gray-600">Book and manage learning sessions with an intuitive calendar interface.</p>
-            </div>
-            <div className="bg-gray-100 p-6 rounded-lg shadow-md">
-              <h3 className="text-xl font-semibold mb-2 text-gray-800">Q&A Forum</h3>
-              <p className="text-gray-600">Ask questions, provide answers, and earn recognition for your contributions.</p>
-            </div>
+      <section className="w-full py-16 bg-black text-white border-b border-gray-800">
+        <div className="max-w-5xl mx-auto px-4 grid grid-cols-1 md:grid-cols-3 gap-8">
+          <div className="bg-[#18181b] rounded-xl p-6 shadow border border-gray-800">
+            <h2 className="text-2xl font-semibold mb-2">Peer Mentorship</h2>
+            <p className="text-gray-300">Connect with knowledgeable peers for one-on-one mentorship sessions tailored to your learning needs.</p>
+          </div>
+          <div className="bg-[#18181b] rounded-xl p-6 shadow border border-gray-800">
+            <h2 className="text-2xl font-semibold mb-2">Integrated Video Calls</h2>
+            <p className="text-gray-300">Seamless video integration for face-to-face learning sessions with your peers.</p>
+          </div>
+          <div className="bg-[#18181b] rounded-xl p-6 shadow border border-gray-800">
+            <h2 className="text-2xl font-semibold mb-2">Study Groups</h2>
+            <p className="text-gray-300">Join or create interactive study groups with real-time chat and collaborative tools.</p>
+          </div>
+          <div className="bg-[#18181b] rounded-xl p-6 shadow border border-gray-800">
+            <h2 className="text-2xl font-semibold mb-2">Resource Sharing</h2>
+            <p className="text-gray-300">Upload, organize and share notes, documents and study materials with version control.</p>
+          </div>
+          <div className="bg-[#18181b] rounded-xl p-6 shadow border border-gray-800">
+            <h2 className="text-2xl font-semibold mb-2">Session Scheduling</h2>
+            <p className="text-gray-300">Book and manage learning sessions with an intuitive calendar interface.</p>
+          </div>
+          <div className="bg-[#18181b] rounded-xl p-6 shadow border border-gray-800">
+            <h2 className="text-2xl font-semibold mb-2">Q&A Forum</h2>
+            <p className="text-gray-300">Ask questions, provide answers, and earn recognition for your contributions.</p>
           </div>
         </div>
       </section>
-
       {/* Testimonials Section */}
-      <section className="w-full py-16 bg-gray-50">
-        <div className="container mx-auto px-6 md:px-12">
-          <h2 className="text-3xl font-bold text-center mb-12 text-gray-800">What Students Say</h2>
-          <div className="grid gap-8 md:grid-cols-2 lg:grid-cols-3">
-            <div className="bg-white p-6 rounded-lg shadow-md">
-              <p className="text-gray-600 italic mb-4">"EduBridge helped me connect with peers who excel in subjects I struggle with. The mentorship sessions have been invaluable!"</p>
-              <h3 className="text-lg font-semibold text-gray-800">Alex Johnson</h3>
-              <p className="text-gray-500">Computer Science Student</p>
+      <section className="w-full py-16 bg-black text-white border-b border-gray-800">
+        <div className="max-w-4xl mx-auto px-4">
+          <h2 className="text-2xl md:text-3xl font-bold mb-8 text-center">What Students Say</h2>
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
+            <div className="bg-[#18181b] rounded-xl p-6 shadow border border-gray-800 flex flex-col items-center">
+              <img src="/placeholder-user.jpg" alt="Bhumika" className="w-16 h-16 rounded-full mb-3" />
+              <p className="text-lg italic mb-2">"EduBridge helped me connect with peers who excel in subjects I struggle with. The mentorship sessions have been invaluable!"</p>
+              <div className="font-semibold">Bhumika</div>
+              <div className="text-sm text-gray-400">Student 1</div>
             </div>
-            <div className="bg-white p-6 rounded-lg shadow-md">
-              <p className="text-gray-600 italic mb-4">"The collaborative study groups feature is amazing! It's like having a virtual study room available 24/7."</p>
-              <h3 className="text-lg font-semibold text-gray-800">Priya Sharma</h3>
-              <p className="text-gray-500">Engineering Student</p>
+            <div className="bg-[#18181b] rounded-xl p-6 shadow border border-gray-800 flex flex-col items-center">
+              <img src="/placeholder-user.jpg" alt="Kalyan" className="w-16 h-16 rounded-full mb-3" />
+              <p className="text-lg italic mb-2">"The collaborative study groups feature is amazing! It's like having a virtual study room available 24/7."</p>
+              <div className="font-semibold">Kalyan</div>
+              <div className="text-sm text-gray-400">Student 2</div>
             </div>
-            <div className="bg-white p-6 rounded-lg shadow-md">
-              <p className="text-gray-600 italic mb-4">"Being able to share my notes and help others has not only reinforced my own learning but earned me recognition among peers."</p>
-              <h3 className="text-lg font-semibold text-gray-800">Michael Chen</h3>
-              <p className="text-gray-500">Biology Major</p>
+            <div className="bg-[#18181b] rounded-xl p-6 shadow border border-gray-800 flex flex-col items-center">
+              <img src="/placeholder-user.jpg" alt="Dhanya" className="w-16 h-16 rounded-full mb-3" />
+              <p className="text-lg italic mb-2">"Being able to share my notes and help others has not only reinforced my own learning but earned me recognition among peers."</p>
+              <div className="font-semibold">Dhanya</div>
+              <div className="text-sm text-gray-400">Student 3</div>
             </div>
           </div>
         </div>
       </section>
-
-      {/* Call to Action Section */}
-      <section className="w-full py-16 bg-blue-500 text-white">
-        <div className="container mx-auto px-6 md:px-12 text-center">
-          <h2 className="text-3xl font-bold mb-6">Ready to Transform Your Learning Experience?</h2>
-          <p className="text-lg mb-8">
-            Join thousands of students who are already benefiting from collaborative learning on EduBridge.
-          </p>
-          <Link href="/signup">
-            <Button size="lg" className="bg-white text-blue-700 hover:bg-gray-100">
-              Create Your Account
-            </Button>
-          </Link>
+      {/* Call to Action */}
+      <section className="w-full py-16 bg-black text-white">
+        <div className="max-w-3xl mx-auto px-4 text-center">
+          <h2 className="text-3xl font-bold mb-4">Ready to Transform Your Learning Experience?</h2>
+          <p className="mb-6 text-lg text-gray-300">Join thousands of students who are already benefiting from collaborative learning on EduBridge.</p>
+          <Button size="lg" className="bg-white text-black hover:bg-gray-200 font-bold" onClick={() => window.location.href = "/signup"}>Create Your Account</Button>
         </div>
       </section>
-
-      {/* Footer Section */}
-      <footer className="w-full py-8 bg-gray-800 text-white">
-        <div className="container mx-auto px-6 md:px-12">
-          <div className="grid gap-8 md:grid-cols-3">
-            <div>
-              <h3 className="text-lg font-bold mb-4">Platform</h3>
-              <ul className="space-y-2">
-                <li><Link href="/features" className="hover:underline">Features</Link></li>
-                <li><Link href="/pricing" className="hover:underline">Pricing</Link></li>
-                <li><Link href="/faq" className="hover:underline">FAQ</Link></li>
-              </ul>
-            </div>
-            <div>
-              <h3 className="text-lg font-bold mb-4">Company</h3>
-              <ul className="space-y-2">
-                <li><Link href="/about" className="hover:underline">About Us</Link></li>
-                <li><Link href="/contact-us" className="hover:underline">Contact</Link></li>
-                <li><Link href="/feedback" className="hover:underline">Feedback</Link></li>
-              </ul>
-            </div>
-            <div>
-              <h3 className="text-lg font-bold mb-4">Legal</h3>
-              <ul className="space-y-2">
-                <li><Link href="/privacy" className="hover:underline">Privacy Policy</Link></li>
-                <li><Link href="/terms" className="hover:underline">Terms of Service</Link></li>
-                <li><Link href="/cookies" className="hover:underline">Cookie Policy</Link></li>
-              </ul>
-            </div>
-          </div>
-          <div className="mt-8 text-center text-sm text-gray-400">
-            <p>For inquiries, email us at <a href="mailto:siriananth.is22@bmsce.ac.in" className="underline">siriananth.is22@bmsce.ac.in</a> or <a href="mailto:vishaka.is22@bmsce.ac.in" className="underline">vishaka.is22@bmsce.ac.in</a>.</p>
-            <p>© 2025 EduBridge. All rights reserved.</p>
-          </div>
+      {/* Footer */}
+      <footer className="w-full py-8 bg-black text-white border-t border-gray-800 text-center">
+        <div className="mb-2">
+          <span className="font-bold">Platform</span> &nbsp;|&nbsp;
+          Features &nbsp;|&nbsp; Pricing &nbsp;|&nbsp; FAQ
         </div>
+        <div className="mb-2">
+          <span className="font-bold">Company</span> &nbsp;|&nbsp;
+          About Us &nbsp;|&nbsp; Contact &nbsp;|&nbsp; Feedback
+        </div>
+        <div className="mb-2">
+          <span className="font-bold">Legal</span> &nbsp;|&nbsp;
+          Privacy Policy &nbsp;|&nbsp; Terms of Service &nbsp;|&nbsp; Cookie Policy
+        </div>
+        <div className="mb-2 text-gray-400 text-sm">
+          For inquiries, email us at <a href="mailto:siriananth.is22@bmsce.ac.in" className="underline">siriananth.is22@bmsce.ac.in</a> or <a href="mailto:vishaka.is22@bmsce.ac.in" className="underline">vishaka.is22@bmsce.ac.in</a>.
+        </div>
+        <div className="text-gray-500 text-xs">© 2025 EduBridge. All rights reserved.</div>
       </footer>
-    </div>
+    </main>
   )
 }
 

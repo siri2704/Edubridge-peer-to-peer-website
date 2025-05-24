@@ -13,8 +13,12 @@ import { DashboardHeader } from "@/components/dashboard-header"
 import { DashboardShell } from "@/components/dashboard-shell"
 import { RecentActivity } from "@/components/recent-activity"
 import { UpcomingSessions } from "@/components/upcoming-sessions"
+import { useTheme } from "next-themes"
+import Link from "next/link"
 
 export default function DashboardPage() {
+  const { theme } = useTheme()
+  const isDark = theme === "dark"
   const router = useRouter()
   const [isLoading, setIsLoading] = useState(true)
 
@@ -33,7 +37,7 @@ export default function DashboardPage() {
 
   if (isLoading) {
     return (
-      <div className="flex h-screen items-center justify-center">
+      <div className={`flex h-screen items-center justify-center ${isDark ? "bg-black text-white" : "bg-white text-black"}`}>
         <div className="text-center">
           <div className="animate-spin h-8 w-8 border-4 border-primary border-t-transparent rounded-full mx-auto"></div>
           <p className="mt-4 text-muted-foreground">Loading your dashboard...</p>
@@ -45,13 +49,13 @@ export default function DashboardPage() {
   return (
     <DashboardShell>
       <DashboardHeader heading="Dashboard" text="Welcome back! Here's an overview of your learning journey.">
-        <Button>
+        <Button className={isDark ? "bg-white text-black hover:bg-gray-200" : "bg-black text-white hover:bg-gray-900"}>
           <Plus className="mr-2 h-4 w-4" />
           New Session
         </Button>
       </DashboardHeader>
-      <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
-        <Card>
+      <div className={`grid gap-4 md:grid-cols-2 lg:grid-cols-4 ${isDark ? "bg-black text-white" : "bg-white text-black"}`}>
+        <Card className={isDark ? "bg-[#18181b] text-white border-gray-800" : "bg-white text-black border-gray-200"}>
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
             <CardTitle className="text-sm font-medium">XP Points</CardTitle>
             <Award className="h-4 w-4 text-muted-foreground" />
@@ -62,7 +66,7 @@ export default function DashboardPage() {
             <Progress value={65} className="mt-2 h-2" />
           </CardContent>
         </Card>
-        <Card>
+        <Card className={isDark ? "bg-[#18181b] text-white border-gray-800" : "bg-white text-black border-gray-200"}>
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
             <CardTitle className="text-sm font-medium">Mentorship Sessions</CardTitle>
             <Users className="h-4 w-4 text-muted-foreground" />
@@ -72,7 +76,7 @@ export default function DashboardPage() {
             <p className="text-xs text-muted-foreground">+2 from last week</p>
           </CardContent>
         </Card>
-        <Card>
+        <Card className={isDark ? "bg-[#18181b] text-white border-gray-800" : "bg-white text-black border-gray-200"}>
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
             <CardTitle className="text-sm font-medium">Study Groups</CardTitle>
             <Users className="h-4 w-4 text-muted-foreground" />
@@ -82,7 +86,7 @@ export default function DashboardPage() {
             <p className="text-xs text-muted-foreground">Active memberships</p>
           </CardContent>
         </Card>
-        <Card>
+        <Card className={isDark ? "bg-[#18181b] text-white border-gray-800" : "bg-white text-black border-gray-200"}>
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
             <CardTitle className="text-sm font-medium">Resources Shared</CardTitle>
             <FileText className="h-4 w-4 text-muted-foreground" />

@@ -1,6 +1,6 @@
 "use client"
 
-import { useState, useEffect } from "react"
+import { useEffect, useState } from "react"
 import { useRouter } from "next/navigation"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
@@ -27,7 +27,7 @@ interface Mentor {
 export default function MentorsPage() {
   const router = useRouter()
   const [isLoading, setIsLoading] = useState(true)
-  const [mentors, setMentors] = useState<Mentor[]>([])
+  const [mentors, setMentors] = useState<any[]>([])
   const [searchQuery, setSearchQuery] = useState("")
   const [subjectFilter, setSubjectFilter] = useState("")
   const [filter, setFilter] = useState("subject")
@@ -39,24 +39,26 @@ export default function MentorsPage() {
       return
     }
 
-    // Fetch mentors from the backend API
-    fetch('/api/mentors')
+    // Fetch approved mentors from the backend API
+    fetch('/api/mentors?status=approved')
       .then((response) => response.json())
       .then((data) => {
-        setMentors(data)
+        setMentors(Array.isArray(data.mentors) ? data.mentors : [])
         setIsLoading(false)
       })
   }, [router])
 
   // Filter mentors based on search query and subject filter
   const filteredMentors = mentors.filter((mentor) => {
+    const skills = Array.isArray(mentor.skills) ? mentor.skills : [];
+    const subjects = Array.isArray(mentor.subjects) ? mentor.subjects : (mentor.subject ? [mentor.subject] : []);
     const matchesSearch =
       searchQuery === "" ||
-      mentor.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      mentor.skills.some((skill) => skill.toLowerCase().includes(searchQuery.toLowerCase())) ||
-      mentor.subjects.some((subject) => subject.toLowerCase().includes(searchQuery.toLowerCase()))
+      (mentor.name && mentor.name.toLowerCase().includes(searchQuery.toLowerCase())) ||
+      skills.some((skill: string) => skill.toLowerCase().includes(searchQuery.toLowerCase())) ||
+      subjects.some((subject: string) => subject.toLowerCase().includes(searchQuery.toLowerCase()))
 
-    const matchesSubject = subjectFilter === "all" || subjectFilter === "" || mentor.subjects.some((subject) => subject === subjectFilter)
+    const matchesSubject = subjectFilter === "all" || subjectFilter === "" || subjects.some((subject: string) => subject === subjectFilter)
 
     return matchesSearch && matchesSubject
   })
@@ -124,38 +126,38 @@ export default function MentorsPage() {
           ) : (
             filteredMentors.map((mentor) => (
               <div
-                key={mentor.id}
+                key={mentor._id || mentor.id}
                 className="bg-[#18181b] rounded-2xl shadow-lg p-6 flex flex-col items-center w-full max-w-[300px] min-w-[250px] transition-transform duration-200 hover:scale-105 hover:shadow-2xl border border-gray-800"
               >
                 <Avatar className="w-20 h-20 mb-4">
                   <AvatarImage src={mentor.image || "/placeholder-user.jpg"} alt={mentor.name} />
-                  <AvatarFallback>{mentor.name[0]}</AvatarFallback>
+                  <AvatarFallback>{mentor.name?.[0] || '?'}</AvatarFallback>
                 </Avatar>
                 <h2 className="text-xl font-bold mb-1 text-white text-center">{mentor.name}</h2>
                 <div className="flex flex-wrap gap-1 mb-2 justify-center">
-                  {mentor.skills.map((skill) => (
+                  {(mentor.skills || []).map((skill: string) => (
                     <Badge key={skill} className="bg-blue-900 text-blue-200 px-2 py-1 rounded-full text-xs font-medium">
                       {skill}
                     </Badge>
                   ))}
                 </div>
-                <p className="text-gray-300 text-sm mb-2 text-center min-h-[40px]">{mentor.fieldOfStudy}</p>
+                <p className="text-gray-300 text-sm mb-2 text-center min-h-[40px]">{mentor.fieldOfStudy || mentor.subject || ''}</p>
                 <div className="flex items-center gap-2 mb-2">
                   <span className="text-yellow-400 font-semibold text-lg flex items-center">
                     <Star className="w-5 h-5 mr-1" fill="#facc15" />
-                    {mentor.rating?.toFixed(1) || "4.5"}
+                    {mentor.rating?.toFixed ? mentor.rating.toFixed(1) : (mentor.rating || "4.5")}
                   </span>
                   <span className="text-gray-400 text-xs">({mentor.sessionsCompleted || 0} sessions)</span>
                 </div>
                 <Button
                   className="w-full mt-2 bg-blue-700 hover:bg-blue-800 text-white rounded-full font-semibold py-2 transition-colors"
-                  onClick={() => router.push(`/chat?groupId=${mentor.id}&mentorName=${encodeURIComponent(mentor.name)}`)}
+                  onClick={() => router.push(`/chat?mentor=${mentor.email}`)}
                 >
                   Chat
                 </Button>
                 <Button
                   className="w-full mt-2 bg-green-700 hover:bg-green-800 text-white rounded-full font-semibold py-2 transition-colors"
-                  onClick={() => router.push(`/sessions/book?mentorId=${mentor.id}`)}
+                  onClick={() => router.push(`/sessions/book?mentorId=${mentor._id || mentor.id}`)}
                 >
                   Set Up Session
                 </Button>

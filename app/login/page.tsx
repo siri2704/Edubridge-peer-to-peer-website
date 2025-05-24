@@ -14,7 +14,7 @@ import { BookOpen } from "lucide-react"
 
 const formSchema = z.object({
   email: z.string().email({ message: "Please enter a valid email address" }),
-  password: z.string().min(6, { message: "Password must be at least 6 characters" }),
+  password: z.string().min(4, { message: "Password must be at least 4 characters" }),
 })
 
 export default function LoginPage() {
@@ -32,28 +32,40 @@ export default function LoginPage() {
 
   async function onSubmit(values: z.infer<typeof formSchema>) {
     setIsLoading(true)
-
     try {
-      // This would be replaced with actual API call
-      console.log("Login values:", values)
+      // Prevent login if already logged in
+      if (typeof window !== "undefined" && localStorage.getItem("edubridge-token")) {
+        toast({
+          variant: "destructive",
+          title: "Already logged in",
+          description: "You are already logged in. Please logout first to switch accounts.",
+        })
+        setIsLoading(false)
+        return
+      }
 
-      // Simulate API call
-      await new Promise((resolve) => setTimeout(resolve, 1000))
-
-      // Store token (this would come from your API)
-      localStorage.setItem("edubridge-token", "sample-token")
-
-      toast({
-        title: "Login successful",
-        description: "Welcome back to EduBridge!",
+      const res = await fetch("/api/auth", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ action: "login", ...values }),
       })
-
-      router.push("/dashboard")
-    } catch (error) {
+      const data = await res.json()
+      if (!res.ok) throw new Error(data.error || "Login failed")
+      localStorage.setItem("edubridge-token", data.token)
+      localStorage.setItem("edubridge-role", data.user.role)
+      toast({ title: "Login successful", description: `Welcome back, ${data.user.name}!` })
+      if (data.user.role === "mentor") {
+        router.push("/mentor-dashboard")
+      } else if (data.user.role === "admin") {
+        router.push("/admin-dashboard")
+      } else {
+        router.push("/dashboard")
+      }
+    } catch (error: any) {
       toast({
         variant: "destructive",
         title: "Login failed",
-        description: "Please check your credentials and try again.",
+        description: error.message || "Please check your credentials and try again.",
       })
     } finally {
       setIsLoading(false)
