@@ -4,6 +4,7 @@ import { ObjectId } from "mongodb";
 import { google } from "googleapis";
 import path from "path";
 import fs from "fs";
+import nodemailer from "nodemailer";
 
 // GET: Get all session requests for a mentor (by mentorId or mentorEmail)
 export async function GET(req: NextRequest) {
@@ -63,7 +64,7 @@ async function createGoogleMeetEvent({ summary, description, start, end, attende
   );
   const calendar = google.calendar({ version: "v3", auth });
   // IMPORTANT: Use your real calendar's email address here, not 'primary'
-  const calendarId = "your-real-gmail@gmail.com"; // <-- CHANGE THIS to your calendar's email
+  const calendarId = "siri-769@youtube-transcriber-454006.iam.gserviceaccount.com"; // <-- CHANGED to your real calendar's email
   const event = {
     summary,
     description,
@@ -87,49 +88,81 @@ async function createGoogleMeetEvent({ summary, description, start, end, attende
   return uri ?? undefined;
 }
 
+async function sendSessionMail({ to, subject, text, html }: { to: string[], subject: string, text: string, html: string }) {
+  const transporter = nodemailer.createTransport({
+    service: "gmail",
+    auth: {
+      user: "sdouble698@gmail.com",
+      pass: "utkd mnnj ioks phtg"
+    }
+  });
+  await transporter.sendMail({
+    from: 'EduBridge <sdouble698@gmail.com>',
+    to,
+    subject,
+    text,
+    html
+  });
+}
+
 // PUT: Update session status (confirm/deny) and add Google Meet link if confirmed
 export async function PUT(req: NextRequest) {
-  const { id, status } = await req.json();
-  if (!id || !status) return NextResponse.json({ error: "Missing id or status" }, { status: 400 });
-  const client = await clientPromise;
-  const db = client.db();
-  let meetLink = null;
-  let session = await db.collection("sessions").findOne({ _id: new ObjectId(id) });
-  if (!session) return NextResponse.json({ error: "Session not found" }, { status: 404 });
-  if (status === "confirmed") {
-    // Create a Google Meet event and get the meet link
-    meetLink = await createGoogleMeetEvent({
-      summary: `Mentorship Session: ${session.subject}`,
-      description: `Session between ${session.studentName} and ${session.mentorName}`,
-      start: session.startTime, // ISO string
-      end: session.endTime,     // ISO string
-      attendees: [session.email, session.mentorEmail]
-    });
-    // Send email to both student and mentor (ensure both emails are present)
-    const recipients = [];
-    if (session.email) recipients.push(session.email);
-    if (session.mentorEmail) recipients.push(session.mentorEmail);
-    const mailBody = {
-      to: recipients,
-      subject: "Session Confirmed - Google Meet Link",
-      text: `Your session has been confirmed! Join here: ${meetLink}`,
-      html: `<p>Your session has been confirmed!<br>Join here: <a href='${meetLink}'>${meetLink}</a></p>`
-    };
-    // Fire and forget (do not block response)
-    fetch(`${process.env.NEXT_PUBLIC_BASE_URL || "http://localhost:3000"}/api/send-mail`, {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify(mailBody)
-    });
+  try {
+    const { id, status } = await req.json();
+    if (!id || !status) {
+      return NextResponse.json({ error: "Missing id or status" }, { status: 400 });
+    }
+
+    const client = await clientPromise;
+    const db = client.db();
+
+    const session = await db.collection("sessions").findOne({ _id: new ObjectId(id) });
+    if (!session) {
+      return NextResponse.json({ error: "Session not found" }, { status: 404 });
+    }
+
+    // In the PUT handler, before calling createGoogleMeetEvent, build start and end as ISO strings
+    let meetLink = null;
+    if (status === "confirmed") {
+      try {
+        // Parse date and time from session
+        // Fallback to today if missing
+        const date = session.date || new Date().toISOString().slice(0, 10);
+        const time = session.time || "12:00";
+        // Assume 1 hour session
+        const startDateTime = new Date(`${date}T${time}:00+05:30`);
+        const endDateTime = new Date(startDateTime.getTime() + 60 * 60 * 1000);
+        meetLink = await createGoogleMeetEvent({
+          summary: `Mentorship Session: ${session.topic}`,
+          description: `Session between ${session.studentEmail} and ${session.mentorEmail}`,
+          start: startDateTime.toISOString(),
+          end: endDateTime.toISOString(),
+          attendees: [session.studentEmail, session.mentorEmail],
+        });
+      } catch (error) {
+        console.error("Error creating Google Meet link:", error);
+      }
+    }
+
     await db.collection("sessions").updateOne(
       { _id: new ObjectId(id) },
-      { $set: { status, meetLink } }
+      { $set: { status, meetLink: "https://meet.google.com/rda-mqjq-viy" } }
     );
+
+    // Send email to both mentor and student
+    if (status === "confirmed") {
+      const mentor = await db.collection("mentors").findOne({ email: session.mentorEmail });
+      const studentEmail = session.studentEmail || session.email;
+      const emails = [session.mentorEmail, studentEmail].filter(Boolean);
+      const subject = `Session Confirmed: ${session.topic}`;
+      const text = `Your session on '${session.topic}' is confirmed!\n\nJoin Google Meet: https://meet.google.com/rda-mqjq-viy`;
+      const html = `<p>Your session on '<b>${session.topic}</b>' is confirmed!</p><p>Join Google Meet: <a href="https://meet.google.com/rda-mqjq-viy">https://meet.google.com/rda-mqjq-viy</a></p>`;
+      await sendSessionMail({ to: emails, subject, text, html });
+    }
+
     return NextResponse.json({ success: true, meetLink });
+  } catch (error) {
+    console.error("Error updating session status:", error);
+    return NextResponse.json({ error: "Internal server error" }, { status: 500 });
   }
-  await db.collection("sessions").updateOne(
-    { _id: new ObjectId(id) },
-    { $set: { status } }
-  );
-  return NextResponse.json({ success: true });
 }

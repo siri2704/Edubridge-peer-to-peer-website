@@ -5,6 +5,9 @@ import { useEffect, useState } from "react";
 export default function AdminDashboard() {
   const [stats, setStats] = useState<any>(null);
   const [loading, setLoading] = useState(true);
+  const [pendingMentors, setPendingMentors] = useState<any[]>([]);
+  const [selectedMentor, setSelectedMentor] = useState<any>(null);
+
   useEffect(() => {
     fetch("/api/admin-dashboard")
       .then((res) => res.json())
@@ -12,7 +15,30 @@ export default function AdminDashboard() {
         setStats(data);
         setLoading(false);
       });
+    fetch("/api/mentors?status=pending")
+      .then((res) => res.json())
+      .then((data) => {
+        setPendingMentors(Array.isArray(data.mentors) ? data.mentors : []);
+        setLoading(false);
+      });
   }, []);
+
+  const handleMentorAction = (mentorId: string, action: "approved" | "declined") => {
+    fetch(`/api/mentors`, {
+      method: "PUT",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ id: mentorId, status: action }),
+    })
+      .then((res) => res.json())
+      .then(() => {
+        setPendingMentors((prev) => prev.filter((mentor: any) => mentor._id !== mentorId));
+        setSelectedMentor(null);
+        setStats((prevStats: any) => ({
+          ...prevStats,
+          pendingMentors: (prevStats?.pendingMentors || 1) - 1,
+        }));
+      });
+  };
 
   return (
     <div className="container mx-auto py-8">
@@ -25,10 +51,24 @@ export default function AdminDashboard() {
             <span role="img" aria-label="pending">🧑‍🏫</span> Pending Mentor Applications
           </h2>
           <div>
-            {loading ? "Loading..." : (stats?.pendingMentors || 0) === 0 ? (
+            {loading ? "Loading..." : pendingMentors.length === 0 ? (
               <span>No pending mentor applications.</span>
             ) : (
-              <span>{stats.pendingMentors} pending mentor applications</span>
+              <ul className="space-y-2">
+                {pendingMentors.map((mentor: any) => (
+                  <li key={mentor._id} className="flex justify-between items-center">
+                    <span>{mentor.name} - {mentor.email}</span>
+                    <div className="flex gap-2">
+                      <button
+                        className="bg-blue-600 text-white px-3 py-1 rounded"
+                        onClick={() => setSelectedMentor(mentor)}
+                      >
+                        Review
+                      </button>
+                    </div>
+                  </li>
+                ))}
+              </ul>
             )}
           </div>
         </div>
@@ -71,6 +111,41 @@ export default function AdminDashboard() {
           <li>View reports and feedback (coming soon).</li>
         </ul>
       </div>
+      {/* Mentor Review Modal */}
+      {selectedMentor && (
+        <div className="fixed inset-0 bg-black bg-opacity-60 flex items-center justify-center z-50">
+          <div className="bg-white dark:bg-[#18181b] rounded-2xl shadow-2xl p-8 w-full max-w-md border border-gray-800">
+            <h2 className="text-2xl font-bold mb-4 text-center text-black dark:text-white">Mentor Application Review</h2>
+            <div className="mb-4">
+              <div className="mb-2"><b>Name:</b> {selectedMentor.name}</div>
+              <div className="mb-2"><b>Email:</b> {selectedMentor.email}</div>
+              <div className="mb-2"><b>Subject:</b> {selectedMentor.subject}</div>
+              <div className="mb-2"><b>Qualification:</b> {selectedMentor.qualification}</div>
+              <div className="mb-2"><b>Description:</b> {selectedMentor.description}</div>
+            </div>
+            <div className="flex gap-4 justify-center mt-6">
+              <button
+                className="bg-green-600 text-white px-4 py-2 rounded font-semibold"
+                onClick={() => handleMentorAction(selectedMentor._id, "approved")}
+              >
+                Approve
+              </button>
+              <button
+                className="bg-red-600 text-white px-4 py-2 rounded font-semibold"
+                onClick={() => handleMentorAction(selectedMentor._id, "declined")}
+              >
+                Deny
+              </button>
+              <button
+                className="bg-gray-400 text-black dark:text-white px-4 py-2 rounded font-semibold"
+                onClick={() => setSelectedMentor(null)}
+              >
+                Close
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

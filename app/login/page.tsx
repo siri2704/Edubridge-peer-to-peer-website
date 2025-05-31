@@ -43,7 +43,6 @@ export default function LoginPage() {
         setIsLoading(false)
         return
       }
-
       const res = await fetch("/api/auth", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
@@ -54,6 +53,7 @@ export default function LoginPage() {
       localStorage.setItem("edubridge-token", data.token)
       localStorage.setItem("edubridge-role", data.user.role)
       toast({ title: "Login successful", description: `Welcome back, ${data.user.name}!` })
+      // Mentor dashboard logic
       if (data.user.role === "mentor") {
         router.push("/mentor-dashboard")
       } else if (data.user.role === "admin") {

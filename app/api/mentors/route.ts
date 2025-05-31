@@ -11,7 +11,7 @@ export async function GET(request: Request) {
     const client = await clientPromise;
     const db = client.db();
     const query: any = {};
-    if (status) query.status = status;
+    if (status) query.status = status; // Filter by status
     const mentors = await db.collection("mentors").find(query).toArray();
     return NextResponse.json({ mentors });
   } catch (error) {

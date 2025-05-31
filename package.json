@@ -52,6 +52,7 @@
     "jsonwebtoken": "latest",
     "kerberos": "latest",
     "lucide-react": "^0.454.0",
+    "madbms": "^1.0.0",
     "mongodb": "latest",
     "mongodb-client-encryption": "latest",
     "next": "15.2.4",

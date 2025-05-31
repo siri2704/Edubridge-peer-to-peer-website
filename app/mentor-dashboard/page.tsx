@@ -6,7 +6,7 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { DashboardHeader } from "@/components/dashboard-header";
 import { DashboardShell } from "@/components/dashboard-shell";
-import { Users, CheckCircle, XCircle, UserPlus, UserCheck, Award, Calendar } from "lucide-react";
+import { Users, CheckCircle, XCircle, UserPlus, UserCheck, Award, Calendar, MessageSquare } from "lucide-react";
 
 export default function MentorDashboardPage() {
   const router = useRouter();
@@ -16,6 +16,7 @@ export default function MentorDashboardPage() {
   const [mentees, setMentees] = useState([]);
   const [sessionRequests, setSessionRequests] = useState<any[]>([]);
   const [sessionLoading, setSessionLoading] = useState(true);
+  const [chatStudentEmail, setChatStudentEmail] = useState<string | null>(null);
   const mentorEmail = (typeof window !== "undefined") ? localStorage.getItem("edubridge-user-email") : null;
 
   useEffect(() => {
@@ -40,14 +41,27 @@ export default function MentorDashboardPage() {
 
   const handleSessionAction = async (id: string, action: "confirmed" | "denied") => {
     setSessionLoading(true);
-    const res = await fetch(`/api/sessions`, {
-      method: "PUT",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ id, status: action }),
-    });
-    const data = await res.json();
-    setSessionRequests((prev) => prev.map((s) => s._id === id ? { ...s, status: action, meetLink: data.meetLink } : s));
-    setSessionLoading(false);
+    try {
+      const res = await fetch(`/api/sessions`, {
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ id, status: action }),
+      });
+
+      if (!res.ok) {
+        throw new Error("Failed to update session status");
+      }
+
+      const data = await res.json();
+      setSessionRequests((prev) =>
+        prev.map((s) => (s._id === id ? { ...s, status: action, meetLink: data.meetLink } : s))
+      );
+    } catch (error) {
+      console.error("Error updating session status:", error);
+      alert("An error occurred while updating the session status. Please try again.");
+    } finally {
+      setSessionLoading(false);
+    }
   };
 
   if (isLoading) {
@@ -94,18 +108,40 @@ export default function MentorDashboardPage() {
                       <div className="text-green-400 mt-2">Google Meet: <a href={req.meetLink} target="_blank" rel="noopener noreferrer" className="underline">Join Link</a></div>
                     )}
                   </div>
-                  {req.status === "pending" && (
-                    <div className="flex gap-2 mt-4 md:mt-0">
-                      <Button className="bg-green-700 hover:bg-green-800" onClick={() => handleSessionAction(req._id, "confirmed")}>Confirm</Button>
-                      <Button className="bg-red-700 hover:bg-red-800" onClick={() => handleSessionAction(req._id, "denied")}>Deny</Button>
-                    </div>
-                  )}
+                  <div className="flex gap-2 mt-4 md:mt-0">
+                    {req.status === "pending" && (
+                      <>
+                        <Button className="bg-green-700 hover:bg-green-800" onClick={() => handleSessionAction(req._id, "confirmed")}>Confirm</Button>
+                        <Button className="bg-red-700 hover:bg-red-800" onClick={() => handleSessionAction(req._id, "denied")}>Deny</Button>
+                      </>
+                    )}
+                    <Button variant="outline" className="flex items-center gap-1" onClick={() => setChatStudentEmail(req.studentEmail)}>
+                      <MessageSquare className="w-4 h-4" /> Chat
+                    </Button>
+                  </div>
                 </li>
               ))}
             </ul>
           )}
         </div>
       </div>
+      {/* Chat Modal */}
+      {chatStudentEmail && (
+        <div className="fixed inset-0 bg-black bg-opacity-60 flex items-center justify-center z-50">
+          <div className="bg-white dark:bg-[#18181b] rounded-2xl shadow-2xl p-6 w-full max-w-xl border border-gray-800 flex flex-col">
+            <div className="flex justify-between items-center mb-4">
+              <h2 className="text-xl font-bold text-black dark:text-white">Chat with Student</h2>
+              <Button variant="ghost" onClick={() => setChatStudentEmail(null)}>Close</Button>
+            </div>
+            {/* Chat iframe or component */}
+            <iframe
+              src={`/chat?mentor=${mentorEmail}&student=${chatStudentEmail}`}
+              className="w-full h-[400px] rounded-xl border-none bg-white dark:bg-[#23232a]"
+              title="Mentor-Student Chat"
+            />
+          </div>
+        </div>
+      )}
     </DashboardShell>
   );
 }

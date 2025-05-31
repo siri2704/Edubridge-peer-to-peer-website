@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import clientPromise from "@/lib/mongodb";
+import { ObjectId } from "mongodb";
 
 export async function GET() {
   try {
@@ -21,5 +22,23 @@ export async function GET() {
     });
   } catch (error: any) {
     return NextResponse.json({ error: error.message || "Failed to fetch admin stats" }, { status: 500 });
+  }
+}
+
+export async function PATCH(req: NextRequest) {
+  try {
+    const url = new URL(req.url!);
+    const mentorId = url.pathname.split("/").pop();
+    const { status } = await req.json();
+    if (!mentorId || !status) return NextResponse.json({ error: "Missing mentorId or status" }, { status: 400 });
+    const client = await clientPromise;
+    const db = client.db();
+    const mentors = db.collection("mentors");
+    const mentor = await mentors.findOne({ _id: new ObjectId(mentorId) });
+    if (!mentor) return NextResponse.json({ error: "Mentor not found" }, { status: 404 });
+    await mentors.updateOne({ _id: new ObjectId(mentorId) }, { $set: { status } });
+    return NextResponse.json({ success: true });
+  } catch (error) {
+    return NextResponse.json({ error: "Internal server error" }, { status: 500 });
   }
 }

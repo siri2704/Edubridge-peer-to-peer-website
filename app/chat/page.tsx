@@ -1,7 +1,7 @@
 "use client";
 
 import { Suspense } from "react";
-import { useState, useEffect, useRef } from "react";
+import { useEffect, useState, useRef } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -33,71 +33,33 @@ function ChatPage() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const mentorEmail = searchParams.get("mentor");
-  const [username, setUsername] = useState("userA");
-  const [userEmail, setUserEmail] = useState<string | null>(null);
-  // Use a unique groupId for each student-mentor pair
-  const uniqueGroupId = mentorEmail && userEmail ? `${userEmail}__${mentorEmail}` : (searchParams.get("groupId") || "1");
+  const studentEmail = searchParams.get("student") || localStorage.getItem("edubridge-user-email");
+  // Use the same groupId logic for both mentor and student
+  const groupId = `${studentEmail}__${mentorEmail}`;
 
   const [messages, setMessages] = useState<any[]>([]);
   const [newMessage, setNewMessage] = useState("");
-  const [loading, setLoading] = useState(false);
-  const [file, setFile] = useState<File | null>(null);
   const chatEndRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
-    // Prompt for username if not set
-    let stored = getUsername();
-    if (!stored || stored === "userA") {
-      const input = window.prompt("Enter your username:", "");
-      if (input && input.trim() !== "") {
-        localStorage.setItem("edubridge-username", input.trim());
-        setUsername(input.trim());
-      } else {
-        setUsername("userA");
-      }
-    } else {
-      setUsername(stored);
-    }
-    // Get user email for chat group
-    const email = getUserEmail();
-    if (!email) {
-      const input = window.prompt("Enter your email for chat:", "");
-      if (input && input.trim() !== "") {
-        localStorage.setItem("edubridge-user-email", input.trim());
-        setUserEmail(input.trim());
-      }
-    } else {
-      setUserEmail(email);
-    }
-  }, []);
-
-  useEffect(() => {
     async function fetchMessages() {
-      setLoading(true);
-      const res = await fetch(`/api/chat?groupId=${uniqueGroupId}`);
+      const res = await fetch(`/api/chat?groupId=${groupId}`);
       const data = await res.json();
       setMessages(data);
-      setLoading(false);
     }
     fetchMessages();
     const interval = setInterval(fetchMessages, 2000); // Poll every 2s
     return () => clearInterval(interval);
-  }, [uniqueGroupId]);
-
-  useEffect(() => {
-    chatEndRef.current?.scrollIntoView({ behavior: "smooth" });
-  }, [messages]);
+  }, [groupId]);
 
   const handleSend = async () => {
     if (!newMessage.trim()) return;
+    // Sender can be either mentor or student
+    const sender = localStorage.getItem("edubridge-user-email");
     await fetch("/api/chat", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({
-        groupId: uniqueGroupId,
-        sender: userEmail,
-        text: newMessage,
-      }),
+      body: JSON.stringify({ groupId, sender, text: newMessage }),
     });
     setNewMessage("");
   };
@@ -114,14 +76,12 @@ function ChatPage() {
       </div>
       {/* Chat History */}
       <div className="flex-1 overflow-y-auto px-2 md:px-0 py-6 w-full max-w-2xl mx-auto">
-        {loading ? (
-          <div className="text-center text-gray-400">Loading...</div>
-        ) : messages.length === 0 ? (
+        {messages.length === 0 ? (
           <div className="text-center text-gray-400">No messages yet. Start the conversation!</div>
         ) : (
           <div className="flex flex-col gap-4">
             {messages.map((message) => {
-              const isSender = message.sender === username;
+              const isSender = message.sender === studentEmail;
               return (
                 <div
                   key={message._id || message.id}
@@ -158,19 +118,6 @@ function ChatPage() {
       </div>
       {/* Input Bar */}
       <div className="flex items-center gap-2 p-4 bg-white border-t shadow-md sticky bottom-0 z-10 w-full max-w-2xl mx-auto">
-        <label className="flex items-center cursor-pointer">
-          <input
-            type="file"
-            className="hidden"
-            onChange={e => setFile(e.target.files?.[0] || null)}
-          />
-          <span className="inline-flex items-center justify-center w-10 h-10 rounded-full bg-blue-100 hover:bg-blue-200 mr-2">
-            <svg className="w-6 h-6 text-blue-500" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" d="M15.172 7l-6.586 6.586a2 2 0 102.828 2.828L18 9.828M7 7h.01M7 7a5 5 0 017.07 7.07l-7.07-7.07z" /></svg>
-          </span>
-        </label>
-        {file && (
-          <span className="text-xs text-gray-600 mr-2 truncate max-w-[120px]">{file.name}</span>
-        )}
         <Input
           type="text"
           placeholder="Type your message..."
